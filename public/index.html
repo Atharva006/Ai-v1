@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>AI Knowledge Mapper</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 800px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    #quiz-container,
+    #result-container {
+      margin-top: 20px;
+    }
+
+    .option-btn {
+      display: block;
+      margin: 5px 0;
+      padding: 10px;
+      width: 100%;
+      cursor: pointer;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>🧠 AI Thinking Mapper</h1>
+
+  <div id="setup-box">
+    <input type="text" id="topic" placeholder="Enter topic (e.g., Async Node.js)" style="padding: 10px; width: 70%;">
+    <button onclick="startQuiz()" style="padding: 10px;">Start Quiz</button>
+  </div>
+
+  <div id="quiz-container" class="hidden">
+    <h2 id="question-text"></h2>
+    <div id="options-box"></div>
+  </div>
+
+  <div id="result-container" class="hidden">
+    <h2>Your Thinking Pattern</h2>
+    <canvas id="thinkingChart"></canvas>
+  </div>
+
+  <script>
+    let currentQuiz = [];
+    let currentQuestionIndex = 0;
+    let userAnswers = [];
+
+    async function startQuiz() {
+      const topic = document.getElementById('topic').value;
+      if (!topic) return alert("Please enter a topic!");
+
+      document.getElementById('setup-box').classList.add('hidden');
+
+      // Fetch questions from backend
+      const res = await fetch('/generate-quiz', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ topic })
+      });
+      currentQuiz = await res.json();
+      showQuestion();
+    }
+
+    function showQuestion() {
+      const q = currentQuiz[currentQuestionIndex];
+      document.getElementById('quiz-container').classList.remove('hidden');
+      document.getElementById('question-text').innerText = q.question;
+
+      const optsDiv = document.getElementById('options-box');
+      optsDiv.innerHTML = '';
+
+      q.options.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.className = 'option-btn';
+        btn.innerText = opt;
+        btn.onclick = () => handleAnswer(opt);
+        optsDiv.appendChild(btn);
+      });
+    }
+
+    async function handleAnswer(selected) {
+      const q = currentQuiz[currentQuestionIndex];
+      userAnswers.push({
+        question: q.question,
+        category: q.category,
+        isCorrect: selected === q.correctAnswer
+      });
+
+      currentQuestionIndex++;
+      if (currentQuestionIndex < currentQuiz.length) {
+        showQuestion();
+      } else {
+        finishQuiz();
+      }
+    }
+
+    async function finishQuiz() {
+      document.getElementById('quiz-container').classList.add('hidden');
+      document.getElementById('result-container').classList.remove('hidden');
+
+      // Get analysis from backend
+      const res = await fetch('/analyze-results', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ results: userAnswers })
+      });
+      const data = await res.json();
+      renderChart(data);
+    }
+
+    function renderChart(data) {
+      const ctx = document.getElementById('thinkingChart').getContext('2d');
+      const labels = Object.keys(data);
+      const scores = labels.map(l => (data[l].correct / data[l].total) * 100);
+
+      new Chart(ctx, {
+        type: 'radar', // Radar charts are great for "Skill Mapping"
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Concept Mastery (%)',
+            data: scores,
+            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+            borderColor: 'rgba(54, 162, 235, 1)',
+            borderWidth: 1
+          }]
+        },
+        options: {
+          scales: {
+            r: { beginAtZero: true, max: 100 }
+          }
+        }
+      });
+    }
+  </script>
+</body>
+
+</html>
