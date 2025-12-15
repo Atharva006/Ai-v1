@@ -1,6 +1,6 @@
 import express from "express";
 import bodyParser from "body-parser";
-import { GoogleGenAI } from "@google/genai"; // <--- FIXED: Removed SchemaType
+import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -11,48 +11,53 @@ const app = express();
 const port = 3000;
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// Middleware
 app.use(express.static("public"));
 app.use(bodyParser.json());
 
-// Initialize Gemini
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-// 1. Generate Quiz Endpoint
+// --- Existing Quiz Endpoints ---
 app.post("/api/generate-quiz", async (req, res) => {
   const { topic } = req.body;
+  const prompt = `Create a technical quiz with 5 questions about "${topic}". Return PURE JSON: [{"question": "...", "options": ["a", "b", "c", "d"], "answer": "a"}]`;
   
-  const prompt = `Create a quiz with 3 short technical questions about "${topic}" to test programming knowledge. 
-  Return PURE JSON in this format: 
-  [{"question": "...", "options": ["a", "b", "c", "d"], "answer": "a"}]`;
-
   try {
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
       contents: prompt,
       config: { responseMimeType: "application/json" }
     });
-    // Handle potential markdown code blocks in response
-    let cleanText = response.text.replace(/```json|```/g, '').trim();
-    res.json(JSON.parse(cleanText));
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Failed to generate quiz" });
-  }
+    res.json(JSON.parse(response.text.replace(/```json|```/g, '').trim()));
+  } catch (error) { res.status(500).json({ error: "Quiz failed" }); }
 });
 
-// 2. Analyze Results Endpoint
 app.post("/api/analyze", async (req, res) => {
   const { topic, userScore, totalQuestions } = req.body;
+  const prompt = `User scored ${userScore}/${totalQuestions} in "${topic}". Return PURE JSON: { "stats": {"Logic": 80, "Syntax": 50}, "role": "Job Title", "salary": "$X-Y", "roadmap": ["Step 1", "Step 2"] }`;
+  
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+      config: { responseMimeType: "application/json" }
+    });
+    res.json(JSON.parse(response.text.replace(/```json|```/g, '').trim()));
+  } catch (error) { res.status(500).json({ error: "Analysis failed" }); }
+});
 
-  const prompt = `The user took a quiz on "${topic}" and scored ${userScore}/${totalQuestions}.
-  Analyze their potential thinking style based on this topic and score.
+// --- NEW TOOL: Future Skills Predictor ---
+app.post("/api/future-skills", async (req, res) => {
+  const { role } = req.body;
   
-  Return PURE JSON with two parts:
-  1. "stats": An object with values (0-100) for these keys: "Logic", "Syntax", "Creativity", "Efficiency".
-  2. "feedback": A short advice paragraph on what to learn next.
-  
-  Format: { "stats": { "Logic": 80, ... }, "feedback": "..." }`;
+  const prompt = `Act as a futurist career coach. The user wants to be a "${role}".
+  Identify the skills they will need in the next 3-5 years.
+  Return PURE JSON with this structure:
+  {
+    "core_skills": ["List 3 fundamental skills"],
+    "future_skills": ["List 3 emerging AI/Tech skills"],
+    "trends": ["List 2 industry shifts"],
+    "advice": "One sentence of strategic advice."
+  }`;
 
   try {
     const response = await ai.models.generateContent({
@@ -60,15 +65,11 @@ app.post("/api/analyze", async (req, res) => {
       contents: prompt,
       config: { responseMimeType: "application/json" }
     });
-    let cleanText = response.text.replace(/```json|```/g, '').trim();
-    res.json(JSON.parse(cleanText));
+    res.json(JSON.parse(response.text.replace(/```json|```/g, '').trim()));
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: "Failed to analyze results" });
+    res.status(500).json({ error: "Prediction failed" });
   }
 });
 
-// Start Server
-app.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}`);
-});
+app.listen(port, () => console.log(`Server running at http://localhost:${port}`));

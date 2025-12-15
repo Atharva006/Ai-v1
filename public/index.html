@@ -4,295 +4,94 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Thinking Style</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <title>BRII AI | Career Engine</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;800&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <style>
-    :root {
-      --background: #09090b;
-      --card: #18181b;
-      --text: #fafafa;
-      --text-muted: #a1a1aa;
-      --primary: #3b82f6;
-      --border: #27272a;
-    }
-
-    body {
-      font-family: 'Inter', sans-serif;
-      background-color: var(--background);
-      color: var(--text);
-      margin: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-    }
-
-    .container {
-      width: 100%;
-      max-width: 500px;
-      padding: 1rem;
-    }
-
-    /* Card Style (Shadcn mimick) */
-    .card {
-      background-color: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 24px;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    }
-
-    h1,
-    h2 {
-      margin-top: 0;
-      font-weight: 600;
-      letter-spacing: -0.025em;
-    }
-
-    h1 {
-      font-size: 1.5rem;
-      margin-bottom: 1.5rem;
-    }
-
-    h2 {
-      font-size: 1.25rem;
-      margin-bottom: 1rem;
-    }
-
-    p {
-      color: var(--text-muted);
-      line-height: 1.6;
-    }
-
-    /* Inputs & Buttons */
-    input {
-      width: 100%;
-      padding: 10px;
-      background: #000;
-      border: 1px solid var(--border);
-      color: white;
-      border-radius: 6px;
-      margin-bottom: 10px;
-      box-sizing: border-box;
-      /* Fix padding width issue */
-    }
-
-    button {
-      width: 100%;
-      padding: 10px;
-      background: var(--text);
-      color: black;
-      border: none;
-      border-radius: 6px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: opacity 0.2s;
-    }
-
-    button:hover {
-      opacity: 0.9;
-    }
-
-    .option-btn {
-      background: #27272a;
-      color: white;
-      margin-bottom: 8px;
-      text-align: left;
-    }
-
-    .option-btn:hover {
-      background: #3f3f46;
-    }
-
-    /* Utilities */
-    .hidden {
-      display: none;
-    }
-
-    .chart-container {
-      position: relative;
-      margin: 20px auto;
-      height: 250px;
-      width: 250px;
-    }
-
-    /* Center text in Donut */
-    .chart-center-text {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      text-align: center;
-    }
-
-    .score-big {
-      font-size: 2rem;
-      font-weight: 800;
-      display: block;
-    }
-
-    .score-label {
-      font-size: 0.875rem;
-      color: var(--text-muted);
-    }
-  </style>
+  <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
+  <nav>
+    <div class="logo">BRII AI</div>
+    <div class="nav-links">
+      <button class="nav-btn active" onclick="switchTool('quiz')">Skill Assessment</button>
+      <button class="nav-btn" onclick="switchTool('future')">Future Compass</button>
+    </div>
+  </nav>
+
   <div class="container">
 
-    <div id="start-screen" class="card">
-      <h1>AI Skill Mapper</h1>
-      <p style="margin-bottom: 20px;">Discover your programming thinking style. Enter a topic to generate a quiz.</p>
-      <input type="text" id="topicInput" placeholder="e.g. React, Python, System Design">
-      <button onclick="startQuiz()">Generate Quiz</button>
+    <div id="quiz-tool" class="tool-section">
+      <div id="start-view" class="card">
+        <h1>Skill Assessment</h1>
+        <p>Test your current knowledge level to generate a learning roadmap.</p>
+        <input type="text" id="topicInput" placeholder="e.g. React, Python, Java">
+        <button onclick="startQuiz()">Start Assessment</button>
+      </div>
+
+      <div id="quiz-view" class="card hidden">
+        <div class="badge-row">
+          <span class="role-badge">Assessment</span>
+          <span id="q-counter">1/5</span>
+        </div>
+        <h3 id="question-text">Loading...</h3>
+        <div id="options-container"></div>
+      </div>
+
+      <div id="result-view" class="hidden">
+        <div class="card center-content">
+          <h2 id="ai-role">Your Level</h2>
+          <div class="chart-container">
+            <canvas id="skillChart"></canvas>
+            <div class="chart-center">
+              <div id="final-score" class="score-val">0</div>
+            </div>
+          </div>
+          <div class="salary" id="ai-salary"></div>
+        </div>
+        <div class="card">
+          <h3>Your Roadmap</h3>
+          <div id="roadmap-container"></div>
+        </div>
+        <button onclick="location.reload()">Restart</button>
+      </div>
     </div>
 
-    <div id="quiz-screen" class="card hidden">
-      <h2 id="question-text">Question...</h2>
-      <div id="options-container"></div>
-    </div>
+    <div id="future-tool" class="tool-section hidden">
+      <div class="card">
+        <h1>Future Compass 🔮</h1>
+        <p>Analyze any job role to see what skills will matter in 2028.</p>
+        <input type="text" id="futureInput" placeholder="e.g. Data Analyst, Marketing Lead">
+        <button onclick="getFutureSkills()">Predict Future</button>
+      </div>
 
-    <div id="result-screen" class="card hidden">
-      <h2>Your Thinking Profile</h2>
+      <div id="future-results" class="hidden">
+        <div class="card highlight-card">
+          <h3>💡 Strategic Advice</h3>
+          <p id="future-advice">Loading...</p>
+        </div>
 
-      <div class="chart-container">
-        <canvas id="skillChart"></canvas>
-        <div class="chart-center-text">
-          <span id="final-score" class="score-big">0</span>
-          <span class="score-label">Score</span>
+        <div class="grid-3">
+          <div class="card small-card">
+            <h3 class="text-blue">Core Skills</h3>
+            <ul id="list-core"></ul>
+          </div>
+          <div class="card small-card">
+            <h3 class="text-purple">Emerging Tech</h3>
+            <ul id="list-future"></ul>
+          </div>
+          <div class="card small-card">
+            <h3 class="text-green">Market Trends</h3>
+            <ul id="list-trends"></ul>
+          </div>
         </div>
       </div>
-
-      <div style="margin-top: 20px;">
-        <h3 style="font-size: 1rem;">Analysis</h3>
-        <p id="feedback-text" style="font-size: 0.9rem;"></p>
-      </div>
-
-      <button onclick="location.reload()" style="margin-top: 20px;">Analyze New Topic</button>
     </div>
 
   </div>
 
-  <script>
-    let questions = [];
-    let currentQ = 0;
-    let score = 0;
-    let topic = "";
-
-    async function startQuiz() {
-      topic = document.getElementById('topicInput').value;
-      if (!topic) return alert("Please enter a topic");
-
-      const btn = document.querySelector('button');
-      btn.innerText = "Generating...";
-      btn.disabled = true;
-
-      try {
-        const res = await fetch('/api/generate-quiz', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ topic })
-        });
-        questions = await res.json();
-
-        document.getElementById('start-screen').classList.add('hidden');
-        document.getElementById('quiz-screen').classList.remove('hidden');
-        showQuestion();
-      } catch (e) {
-        alert("Error generating quiz. Please try again.");
-        btn.innerText = "Generate Quiz";
-        btn.disabled = false;
-      }
-    }
-
-    function showQuestion() {
-      const q = questions[currentQ];
-      document.getElementById('question-text').innerText = q.question;
-
-      const container = document.getElementById('options-container');
-      container.innerHTML = '';
-
-      q.options.forEach(opt => {
-        const btn = document.createElement('button');
-        btn.className = 'option-btn';
-        btn.innerText = opt;
-        btn.onclick = () => handleAnswer(opt === q.answer);
-        container.appendChild(btn);
-      });
-    }
-
-    function handleAnswer(isCorrect) {
-      if (isCorrect) score++;
-      currentQ++;
-
-      if (currentQ < questions.length) {
-        showQuestion();
-      } else {
-        showResults();
-      }
-    }
-
-    async function showResults() {
-      document.getElementById('quiz-screen').classList.add('hidden');
-      document.getElementById('result-screen').classList.remove('hidden');
-      document.getElementById('final-score').innerText = score + "/" + questions.length;
-
-      const res = await fetch('/api/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topic, userScore: score, totalQuestions: questions.length })
-      });
-      const data = await res.json();
-
-      document.getElementById('feedback-text').innerText = data.feedback;
-      renderShadcnChart(data.stats);
-    }
-
-    function renderShadcnChart(stats) {
-      const ctx = document.getElementById('skillChart').getContext('2d');
-
-      // Shadcn-like Palette
-      const colors = [
-        '#3b82f6', // blue
-        '#10b981', // emerald
-        '#f59e0b', // amber
-        '#ef4444', // red
-        '#8b5cf6'  // violet
-      ];
-
-      new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-          labels: Object.keys(stats),
-          datasets: [{
-            data: Object.values(stats),
-            backgroundColor: colors,
-            borderWidth: 0,
-            hoverOffset: 4
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          cutout: '75%', // Makes it a thin donut
-          borderRadius: 5, // Rounds the ends of the segments
-          plugins: {
-            legend: { display: false }, // Hide default legend for cleaner look
-            tooltip: {
-              backgroundColor: '#27272a',
-              bodyColor: '#fafafa',
-              padding: 12,
-              cornerRadius: 8,
-              displayColors: false
-            }
-          }
-        }
-      });
-    }
-  </script>
+  <script src="script.js"></script>
 </body>
 
 </html>
